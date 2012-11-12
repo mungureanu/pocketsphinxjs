@@ -1,0 +1,21 @@
+{
+  "name": "pocketsphinxjs",
+  "version": "0.0.0",
+  "description": "CMU PocketSphinx Javascript API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Lophilo/pocketsphinxjs.git"
+  },
+  "keywords": [
+    "voice",
+    "recognition",
+    "pocketsphinx",
+    "sphinx"
+  ],
+  "author": "Ricky Ng-Adam <rngadam@lophilo.com>",
+  "license": "BSD"
+}
