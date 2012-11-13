@@ -1,5 +1,4 @@
-var ffi = require('node-ffi');
-var ref = require('ref');
+var ffi = require('ffi');
 var path = require('path');
 var sys = require('sys');
 var events = require('events');
@@ -10,6 +9,7 @@ var libs = require('pocketsphinxjs-libs');
 function Recognizer(model) {
   var self = this;
   self.model = model;
+
   var continuous = ffi.Library(libs.LIBPATH, {
      'start': ["int", [
         'string', // hmm
@@ -19,7 +19,8 @@ function Recognizer(model) {
         ]
       ],
      'getLatestHypothesis': ['string', []],
-     'stop': ['void', []]
+     'stop': ['void', []],
+     'waitReady': ['void', []],
    });
 
   self.start = function(filename) {
@@ -33,6 +34,11 @@ function Recognizer(model) {
         self.emit('stopped');
       }
     );
+
+    continuous.waitReady.async(function() {
+      self.emit('ready');
+    });
+
     var hypothesisEmitter = function(err, hypothesis) {
       self.emit('hypothesis', hypothesis);
       continuous.getLatestHypothesis.async(hypothesisEmitter);
@@ -44,14 +50,28 @@ function Recognizer(model) {
     continuous.stop();
   }
 
+  self.getNextHypothesis = function(cb)  {
+    self.once('hypothesis', function(hypothesis) {
+      cb(null, hypothesis);
+    });
+  }
+
+  self.startOnReady = function(cb)  {
+    self.once('ready', function() {
+      cb();
+    });
+    self.start();
+  }
+
   events.EventEmitter.call(this);
 }
 sys.inherits(Recognizer, events.EventEmitter);
 
-if(require.module === module.main) {
-  var recognizer = new Recognizer(model.TIDIGITS_MODEL);
+if(require.main === module) {
+  var recognizer = new Recognizer(model.TURTLE_MODEL);
 
   recognizer.on('stopped', function() {
+    console.log('stopped, exiting');
     process.exit(0);
   });
 
@@ -61,8 +81,12 @@ if(require.module === module.main) {
   });
 
   recognizer.on('hypothesis', function(hypothesis) {
-    console.log('>>>>>>pocketsphinxjs: ' + hypothesis);
+    console.log('pocketsphinxjs: ' + hypothesis);
   });
 
+  console.log('starting recognizer');
+  //recognizer.start(testdata.GOFORWARD_RAW);
   recognizer.start();
+} else {
+  module.exports = new Recognizer(model.TURTLE_MODEL);
 }
