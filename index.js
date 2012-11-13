@@ -11,7 +11,7 @@ function Recognizer(model) {
   self.model = model;
 
   var continuous = ffi.Library(libs.LIBPATH, {
-     'start': ["int", [
+     'start': ["string", [
         'string', // hmm
         'string', // lm
         'string', // dict
@@ -20,7 +20,8 @@ function Recognizer(model) {
       ],
      'getLatestHypothesis': ['string', []],
      'stop': ['void', []],
-     'waitReady': ['void', []],
+     'waitReady': ['int', []],
+     //'reset': ['void', []],
    });
 
   self.start = function(filename) {
@@ -29,14 +30,23 @@ function Recognizer(model) {
       self.model.lm,
       self.model.dict,
       filename,
-      function(err, value) {
-        console.log('continuous recognition exited');
+      function(err, recognizerErr) {
+        if(err) {
+          self.emit('error', err);
+        }
+        if(recognizerErr) {
+          self.emit('error', new Error(recognizerErr));
+        }
         self.emit('stopped');
       }
     );
 
-    continuous.waitReady.async(function() {
-      self.emit('ready');
+    continuous.waitReady.async(function(err, isReady) {
+      console.log(arguments);
+      if(isReady)
+        self.emit('ready');
+      else
+        console.error('waitReady: was waiting but never become READY');
     });
 
     var hypothesisEmitter = function(err, hypothesis) {
@@ -57,6 +67,9 @@ function Recognizer(model) {
   }
 
   self.startOnReady = function(cb)  {
+    self.once('error', function(err) {
+      cb(err);
+    })
     self.once('ready', function() {
       cb();
     });
@@ -70,8 +83,12 @@ sys.inherits(Recognizer, events.EventEmitter);
 if(require.main === module) {
   var recognizer = new Recognizer(model.TURTLE_MODEL);
 
+  recognizer.on('error', function(err) {
+    console.error('pocketsphinxjs ' + err);
+  });
+
   recognizer.on('stopped', function() {
-    console.log('stopped, exiting');
+    console.log('continuous recognition exited');
     process.exit(0);
   });
 
