@@ -23,12 +23,12 @@ describe('audio', function() {
   }
 
   it('played audio is recognized', function(done) {
-    this.timeout(30000);
+    this.timeout(60000);
     testTurtleModel(done);
   });
 
   it('recognition can successfully be restarted', function(done) {
-    this.timeout(30000);
+    this.timeout(60000);
     testTurtleModel(done);
   });
 });
